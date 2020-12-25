@@ -3,6 +3,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Sudoku.BrutalSimplicity\Sudoku.BrutalSimplicity.csproj" />
     <ProjectReference Include="..\Sudoku.DP\Sudoku.DP.csproj" />
+    <ProjectReference Include="..\Sudoku.Interface\Sudoku.Interface.csproj" />
   </ItemGroup>
 
   <PropertyGroup>

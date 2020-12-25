@@ -1,4 +1,8 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
+using Sudoku.DP;
+using Sudoku.Interface;
 
 // https://www.sudopedia.org/wiki/Naked_Triple
 // https://www.sudopedia.org/wiki/Naked_Pair
@@ -10,65 +14,43 @@
 
 namespace Sudoku.Benchmark
 {
-    class Program
+  class Program
+  {
+    private static readonly List<Tuple<string, string>> _puzzles = new List<Tuple<string, string>>(2)
     {
+      new Tuple<string, string>("698500012070020090000018607006092003002000700700480200209160000060040080410003926",
+        "698537412173624895524918637856792143942351768731486259289165374367249581415873926"),
+      new Tuple<string, string>("026780000000003460000056000090000200730090058002000040000940000087200000000061370",
+        "")
+    };
+
     static async Task Main(string[] args)
     {
-      IEngine engine = new SimpleEngine();
-      IBoard board = new Board.Board();
-      IBoard solutinBoard = new Board.Board();
-      ICell cell;
-
       try
       {
-        string path = System.Reflection.Assembly.GetExecutingAssembly().Location;
-        string directory = Path.GetDirectoryName(path);
-        string dataDirectory = Path.Combine(directory, "data");
+        await TestSudokuEngineDPAsync().ConfigureAwait(false);
+      }
+      catch(Exception ex)
+      {
+        Console.WriteLine($"Error, msg: {ex.Message}, stacktrace: {ex.StackTrace}");
+      }
+    }
 
-        string line;
-        int index = 0;
-        using (FileStream fs = new FileStream(Path.Combine(dataDirectory, "1.txt"), FileMode.Open, FileAccess.Read, FileShare.Read))
-        using (StreamReader sr = new StreamReader(fs))
+    static async Task TestSudokuEngineDPAsync()
+    {
+      ISudokuEngine sudokuEngineDP = new SimpleEngineDP();
+
+      foreach(Tuple<string, string> t in _puzzles)
+      {
+        if(await sudokuEngineDP.SolveAsync(t.Item1, out string solution).ConfigureAwait(false) == true)
         {
-          for (int i = 0; i < 9; i++)
+          if(t.Item2.Equals(solution) == true)
           {
-            line = await sr.ReadLineAsync().ConfigureAwait(false);
-
-            for (int j = 0; j < 9; j++)
-            {
-              cell = new Cell(index);
-              cell.CurrentValue = line[j] - 48;
-              board.Cells.Add(cell);
-              index++;
-            }
-          }
-
-          // ligne vide
-          line = await sr.ReadLineAsync().ConfigureAwait(false);
-
-          index = 0;
-          for (int i = 0; i < 9; i++)
-          {
-            line = await sr.ReadLineAsync().ConfigureAwait(false);
-
-            for (int j = 0; j < 9; j++)
-            {
-              cell = new Cell(index);
-              cell.CurrentValue = line[j] - 48;
-              solutinBoard.Cells.Add(cell);
-              index++;
-            }
+            Console.WriteLine($"puzzle solved");
           }
         }
-
-        bool resolved = await engine.Solve(board).ConfigureAwait(false);
-
-        System.Console.WriteLine($"Result: {resolved}");
-      }
-      catch (Exception ex)
-      {
-        int boulette = 0;
       }
     }
-    }
+
+  }
 }

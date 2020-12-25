@@ -7,14 +7,14 @@ namespace Sudoku.DP
 {
   public class Board
   {
-    private Stack<List<Tuple<int, List<int>>>> _stack = new Stack<List<Tuple<int, List<int>>>>();
+    private Stack<List<int>> _stack = new Stack<List<int>>();
 
-    public List<ICell> Cells { get; private set; }
-    public List<ICell> this[int index]
+    public List<Cell> Cells { get; private set; }
+    public List<Cell> this[int index]
     {
       get
       {
-        if (index <= 0 && index <= 8)
+        if(index <= 0 && index <= 8)
         {
           return Cells.Skip(index * 9).Take(9).ToList();
         }
@@ -27,14 +27,14 @@ namespace Sudoku.DP
 
     public Board()
     {
-      Cells = new List<ICell>(81);
+      Cells = new List<Cell>(81);
     }
 
-    public Task<bool> ComputeKnownMovesAsync(ICell cell)
+    public Task<bool> FindNakedSingleAsync(Cell cell)
     {
       return Task.Run(() =>
       {
-        if (cell.CurrentValue == 0 && cell.PossibleValue.Count == 1)
+        if(cell.CurrentValue == 0 && cell.PossibleValue.Count == 1)
         {
           cell.CurrentValue = cell.PossibleValue[0];
           return true;
@@ -42,7 +42,7 @@ namespace Sudoku.DP
         return false;
       });
     }
-    public Task<bool> IsAllConstraintsRespectedAsync(ICell cell)
+    public Task<bool> IsAllConstraintsRespectedAsync(Cell cell)
     {
       return Task.Run(() =>
       {
@@ -53,11 +53,11 @@ namespace Sudoku.DP
         return usedValues.Add(cell.CurrentValue);
       });
     }
-    public Task GetPossibleCellValuesAsync(ICell cell)
+    public Task GetPossibleCellValuesAsync(Cell cell)
     {
       return Task.Run(() =>
       {
-        if (cell.CurrentValue == 0)
+        if(cell.CurrentValue == 0)
         {
           HashSet<int> usedValues = new HashSet<int>();
           ConstraintCellPos.Board[cell.Index].ForEach(i => usedValues.Add(Cells[i].CurrentValue));
@@ -69,17 +69,16 @@ namespace Sudoku.DP
 
     public void Push()
     {
-      List<Tuple<int, List<int>>> values = new List<Tuple<int, List<int>>>(81);
-      Cells.ForEach(c => values.Add(new Tuple<int, List<int>>(c.CurrentValue, new List<int>(c.PossibleValue))));
+      List<int> values = new List<int>(81);
+      Cells.ForEach(c => values.Add(c.CurrentValue));
       _stack.Push(values);
     }
     public void Pop()
     {
-      List<Tuple<int, List<int>>> values = _stack.Pop();
-      for (int i = 0; i < 81; i++)
+      List<int> values = _stack.Pop();
+      for(int i = 0; i < 81; i++)
       {
-        Cells[i].CurrentValue = values[i].Item1;
-        Cells[i].PossibleValue = values[i].Item2;
+        Cells[i].CurrentValue = values[i];
       }
     }
 

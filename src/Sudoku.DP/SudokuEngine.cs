@@ -1,60 +1,63 @@
-using Sudoku.Board;
-using Sudoku.Board.Interface;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Sudoku.Interface;
 
-namespace Sudoku.Engine
+namespace Sudoku.DP
 {
-  public class SimpleEngine : IEngine
+  public class SimpleEngineDP : ISudokuEngine
   {
-    public async Task<bool> Solve(IBoard board)
+    public Task<bool> SolveAsync(string puzzle, out string solution)
     {
-      // trouver tout les moves logique "sans guess"
+      throw new System.NotImplementedException();
+    }
+
+    private async Task<bool> Solve(Board board)
+    {
       bool knowedMovesTodo;
       do
       {
         knowedMovesTodo = false;
-        foreach (ICell c in board.Cells)
+        foreach(Cell c in board.Cells)
         {
           await board.GetPossibleCellValuesAsync(c).ConfigureAwait(false);
-          knowedMovesTodo = knowedMovesTodo || await board.ComputeKnownMovesAsync(c).ConfigureAwait(false);
+          knowedMovesTodo = knowedMovesTodo || await board.FindNakedSingleAsync(c).ConfigureAwait(false);
         }
-      } while (knowedMovesTodo == true);
+      } while(knowedMovesTodo == true);
 
       // Est-ce que la grille est résolue?
       bool gridResolved = true;
-      foreach (ICell c in board.Cells)
+      foreach(Cell c in board.Cells)
       {
         gridResolved = gridResolved && await board.IsAllConstraintsRespectedAsync(c).ConfigureAwait(false);
       }
-      if (gridResolved == true)
+      if(gridResolved == true)
       {
         return true; // solved!
       }
 
-      foreach (ICell c in board.Cells)
+      foreach(Cell c in board.Cells)
       {
-        if (c.CurrentValue == 0 && c.PossibleValue.Count > 0)
+        if(c.CurrentValue == 0 && c.PossibleValue.Count > 0)
         {
           List<int> possibleValue = new List<int>(c.PossibleValue);
-          foreach (int val in possibleValue)
+          foreach(int val in possibleValue)
           {
             c.CurrentValue = val;
 
             System.Console.WriteLine($"Recurse cell index: {c.Index}, value tried: {val}");
 
-            ((Board.Board)board).Push();
+            board.Push();
             bool success = await Solve(board).ConfigureAwait(false);
 
             System.Console.WriteLine($"Back from Recurse cell index: {c.Index}, value tried: {val}, success: {success}");
 
-            if (success == true)
+            if(success == true)
             {
               return true;
             }
             else
             {
-              ((Board.Board)board).Pop();
+              board.Pop();
             }
           }
         }
@@ -62,9 +65,9 @@ namespace Sudoku.Engine
 
       System.Console.WriteLine();
       int index = 0;
-      for (int i = 0; i < 9; i++)
+      for(int i = 0; i < 9; i++)
       {
-        for (int j = 0; j < 9; j++)
+        for(int j = 0; j < 9; j++)
         {
           System.Console.Write($"{board.Cells[index].CurrentValue} ");
           index++;
