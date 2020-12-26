@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Sudoku.Interface;
@@ -6,9 +7,21 @@ namespace Sudoku.DP
 {
   public class SimpleEngineDP : ISudokuEngine
   {
-    public Task<bool> SolveAsync(string puzzle, out string solution)
+    public async Task<Tuple<bool, string>> SolveAsync(string puzzle)
     {
-      throw new System.NotImplementedException();
+      string solution = "";
+      Board board = new Board();
+      Cell cell;
+      for(int i=0;i<81;i++)
+      {
+        cell = new Cell(i);
+        cell.CurrentValue = puzzle[i]-48;
+        board.Cells[i](cell);
+      }
+
+      bool solved = await Solve(board).ConfigureAwait(false);
+
+      return new Tuple<bool, string>(solved, solution);
     }
 
     private async Task<bool> Solve(Board board)
