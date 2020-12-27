@@ -43,18 +43,18 @@ namespace Sudoku.DP
           board.GetPossibleCellValues(c);
         }
 
-        // Console.WriteLine();
-        // int indexTmp = 0;
-        // for(int i = 0; i < 9; i++)
-        // {
-        //   for(int j = 0; j < 9; j++)
-        //   {
-        //     Console.Write($"{board.Cells[indexTmp].CurrentValue} ");
-        //     indexTmp++;
-        //   }
-        //   Console.Write("\n");
-        // }
-        // Console.WriteLine();
+        Console.WriteLine();
+        int indexTmp = 0;
+        for(int i = 0; i < 9; i++)
+        {
+          for(int j = 0; j < 9; j++)
+          {
+            Console.Write($"{board.Cells[indexTmp].CurrentValue} ");
+            indexTmp++;
+          }
+          Console.Write("\n");
+        }
+        Console.WriteLine();
 
         knowedMovesTodo = board.FindHiddenSingle();
       } while(knowedMovesTodo == true);
@@ -74,12 +74,12 @@ namespace Sudoku.DP
           {
             c.CurrentValue = val;
 
-            //Console.WriteLine($"Recurse cell index: {c.Index}, value tried: {val}");
+            Console.WriteLine($"Recurse cell index: {c.Index}, value tried: {val}");
 
             board.Push();
             bool success = Solve(board);
 
-            //Console.WriteLine($"Back from Recurse cell index: {c.Index}, value tried: {val}, success: {success}");
+            Console.WriteLine($"Back from Recurse cell index: {c.Index}, value tried: {val}, success: {success}");
 
             if(success == true)
             {
@@ -93,18 +93,18 @@ namespace Sudoku.DP
         }
       }
 
-      // Console.WriteLine();
-      // int index = 0;
-      // for(int i = 0; i < 9; i++)
-      // {
-      //   for(int j = 0; j < 9; j++)
-      //   {
-      //     Console.Write($"{board.Cells[index].CurrentValue} ");
-      //     index++;
-      //   }
-      //   Console.Write("\n");
-      // }
-      // Console.WriteLine();
+      Console.WriteLine();
+      int index = 0;
+      for(int i = 0; i < 9; i++)
+      {
+        for(int j = 0; j < 9; j++)
+        {
+          Console.Write($"{board.Cells[index].CurrentValue} ");
+          index++;
+        }
+        Console.Write("\n");
+      }
+      Console.WriteLine();
 
       return false;
     }
