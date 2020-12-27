@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Text;
 using System.Threading.Tasks;
 using Sudoku.Interface;
 
@@ -9,19 +10,24 @@ namespace Sudoku.DP
   {
     public async Task<Tuple<bool, string>> SolveAsync(string puzzle)
     {
-      string solution = "";
       Board board = new Board();
       Cell cell;
-      for(int i=0;i<81;i++)
+      for(int i = 0; i < 81; i++)
       {
         cell = new Cell(i);
-        cell.CurrentValue = puzzle[i]-48;
-        board.Cells[i](cell);
+        cell.CurrentValue = puzzle[i] - 48;
+        board.Cells[i] = cell;
       }
 
       bool solved = await Solve(board).ConfigureAwait(false);
 
-      return new Tuple<bool, string>(solved, solution);
+      StringBuilder sb = new StringBuilder();
+      board.Cells.ForEach(c =>
+      {
+        sb.Append((char)(c.CurrentValue + 48));
+      });
+
+      return new Tuple<bool, string>(solved, sb.ToString());
     }
 
     private async Task<bool> Solve(Board board)

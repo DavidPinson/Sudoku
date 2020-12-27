@@ -40,14 +40,24 @@ namespace Sudoku.Benchmark
     {
       ISudokuEngine sudokuEngineDP = new SimpleEngineDP();
 
+      Tuple<bool, string> solvedReturn;
       foreach(Tuple<string, string> t in _puzzles)
       {
-        if(await sudokuEngineDP.SolveAsync(t.Item1, out string solution).ConfigureAwait(false) == true)
+        solvedReturn = await sudokuEngineDP.SolveAsync(t.Item1).ConfigureAwait(false);
+        if(solvedReturn.Item1 == true)
         {
-          if(t.Item2.Equals(solution) == true)
+          if(t.Item2.Equals(solvedReturn.Item2) == true)
           {
-            Console.WriteLine($"puzzle solved");
+            Console.WriteLine($"Solver think it solved the puzzle and it's right! Puzzle SOLVED");
           }
+          else
+          {
+            Console.WriteLine($"Problem: solver think it solved the puzzle but it's wrong");
+          }
+        }
+        else
+        {
+          Console.WriteLine($"Solver did not solved the puzzle");        
         }
       }
     }

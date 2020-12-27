@@ -42,6 +42,13 @@ namespace Sudoku.DP
         return false;
       });
     }
+    public Task<bool> FindHiddenSingleAsync(Cell cell)
+    {
+      return Task.Run(() =>
+      {
+        return false;
+      });
+    }
     public Task<bool> IsAllConstraintsRespectedAsync(Cell cell)
     {
       return Task.Run(() =>
