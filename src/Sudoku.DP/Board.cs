@@ -30,86 +30,93 @@ namespace Sudoku.DP
       Cells = new List<Cell>(81);
     }
 
-    public static Task<bool> FindNakedSingleAsync(Cell cell)
-    {
-      return Task.Run(() =>
-      {
-        if(cell.CurrentValue == 0 && cell.PossibleValue.Count == 1)
-        {
-          cell.CurrentValue = cell.PossibleValue[0];
-          return true;
-        }
-        return false;
-      });
-    }
-    public Task<bool> FindHiddenSingleAsync()
+    public bool FindHiddenSingle()
     {
       // pour que cette méthode fonctione l'hypothèse selon laquelle toutes les "possibles values"
       // de toutes les cases sont trouvées est posée.
 
-      return Task.Run(() =>
+      bool atLeastOneHiddenSingleHasBeenFound = false;
+      Dictionary<int, List<int>> hiddenSingles = new();
+
+      ConstraintCellPos.Houses.ForEach(l =>
       {
-        bool atLeastOneHiddenSingleHasBeenFound = false;
-        Dictionary<int, List<int>> hiddenSingles = new();
-
-        ConstraintCellPos.Houses.ForEach(l =>
+        hiddenSingles.Clear();
+        l.ForEach(index =>
         {
-          hiddenSingles.Clear();
-          l.ForEach(index =>
+          if(Cells[index].CurrentValue == 0)
           {
-            if(Cells[index].CurrentValue == 0)
+            Cells[index].PossibleValue.ForEach(val =>
             {
-              Cells[index].PossibleValue.ForEach(val =>
+              if(hiddenSingles.ContainsKey(val) == false)
               {
-                if(hiddenSingles.ContainsKey(val) == false)
-                {
-                  hiddenSingles[val] = new List<int>();
-                }
+                hiddenSingles[val] = new List<int>();
+              }
 
-                hiddenSingles[val].Add(index);
-              });
-            }
-          });
-
-          Tuple<int, int> hiddenSingle = hiddenSingles
-            .Where(kvp => kvp.Value.Count == 1)
-            .Select(kvp => new Tuple<int, int>(kvp.Value[0], kvp.Key))
-            .FirstOrDefault();
-
-          if(hiddenSingle != default(Tuple<int, int>))
-          {
-            Cells[hiddenSingle.Item1].CurrentValue = hiddenSingle.Item2;
-            Cells[hiddenSingle.Item1].PossibleValue.Clear();
-            atLeastOneHiddenSingleHasBeenFound = true;
-
-            ConstraintCellPos.Board[hiddenSingle.Item1].ForEach(i => Cells[i].PossibleValue.Remove(hiddenSingle.Item2));
+              hiddenSingles[val].Add(index);
+            });
           }
         });
 
-        return atLeastOneHiddenSingleHasBeenFound;
+        Tuple<int, int> hiddenSingle = hiddenSingles
+          .Where(kvp => kvp.Value.Count == 1)
+          .Select(kvp => new Tuple<int, int>(kvp.Value[0], kvp.Key))
+          .FirstOrDefault();
+
+        if(hiddenSingle != default(Tuple<int, int>))
+        {
+          Cells[hiddenSingle.Item1].CurrentValue = hiddenSingle.Item2;
+          Cells[hiddenSingle.Item1].PossibleValue.Clear();
+          atLeastOneHiddenSingleHasBeenFound = true;
+
+          ConstraintCellPos.Board[hiddenSingle.Item1].ForEach(i => Cells[i].PossibleValue.Remove(hiddenSingle.Item2));
+        }
       });
+
+      return atLeastOneHiddenSingleHasBeenFound;
     }
-    public Task<bool> IsAllConstraintsRespectedAsync(Cell cell)
+    public bool IsAllConstraintsRespected()
     {
-      return Task.Run(() =>
+      List<int> houseValues = new();
+
+      foreach(List<int> l in ConstraintCellPos.Houses)
+      {
+        houseValues.Clear();
+        l.ForEach(val => houseValues.Add(Cells[val].CurrentValue));
+
+        if(ConstraintCellPos.AllPossibleValues.Except(houseValues).Any() == true)
+        {
+          return false;
+        }
+      }
+
+      return true;
+    }
+    public void GetPossibleCellValues(Cell cell)
+    {
+      if(cell.CurrentValue == 0)
       {
         HashSet<int> usedValues = new();
-
         ConstraintCellPos.Board[cell.Index].ForEach(i => usedValues.Add(Cells[i].CurrentValue));
+        cell.PossibleValue.Clear();
+        cell.PossibleValue.AddRange(ConstraintCellPos.AllPossibleValues.Except(usedValues));
 
-        return usedValues.Add(cell.CurrentValue);
-      });
-    }
-    public Task GetPossibleCellValuesAsync(Cell cell)
-    {
-      return Task.Run(() =>
-      {
-        if(cell.CurrentValue == 0)
+        if(cell.PossibleValue.Count == 1)
         {
-          HashSet<int> usedValues = new();
-          ConstraintCellPos.Board[cell.Index].ForEach(i => usedValues.Add(Cells[i].CurrentValue));
-          cell.PossibleValue.Clear();
-          cell.PossibleValue.AddRange(ConstraintCellPos.AllPossibleValues.Except(usedValues));
+          AssignCellValue(cell.Index, cell.PossibleValue[0]);
+        }
+      }
+    }
+    private void AssignCellValue(int cellIndex, int cellValue)
+    {
+      Cells[cellIndex].CurrentValue = cellValue;
+      ConstraintCellPos.Board[cellIndex].ForEach(i =>
+      {
+        if(Cells[i].PossibleValue.Remove(cellValue) == true)
+        {
+          if(Cells[i].PossibleValue.Count == 1)
+          {
+            AssignCellValue(i, Cells[i].PossibleValue[0]);
+          }
         }
       });
     }

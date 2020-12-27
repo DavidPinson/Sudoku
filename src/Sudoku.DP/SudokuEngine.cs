@@ -8,42 +8,40 @@ namespace Sudoku.DP
 {
   public class SimpleEngineDP : ISudokuEngine
   {
-    public async Task<Tuple<bool, string>> SolveAsync(string puzzle)
+    public Task<Tuple<bool, string>> SolveAsync(string puzzle)
     {
-      Board board = new();
-      Cell cell;
-      for(int i = 0; i < 81; i++)
+      return Task.Run(() =>
       {
-        cell = new(i);
-        cell.CurrentValue = puzzle[i] - 48;
-        board.Cells.Add(cell);
-      }
+        Board board = new();
+        Cell cell;
+        for(int i = 0; i < 81; i++)
+        {
+          cell = new(i);
+          cell.CurrentValue = puzzle[i] - 48;
+          board.Cells.Add(cell);
+        }
 
-      bool solved = await Solve(board).ConfigureAwait(false);
+        bool solved = Solve(board);
 
-      StringBuilder sb = new();
-      board.Cells.ForEach(c =>
-      {
-        sb.Append((char)(c.CurrentValue + 48));
+        StringBuilder sb = new();
+        board.Cells.ForEach(c =>
+        {
+          sb.Append((char)(c.CurrentValue + 48));
+        });
+
+        return new Tuple<bool, string>(solved, sb.ToString());
       });
-
-      return new Tuple<bool, string>(solved, sb.ToString());
     }
 
-    private async Task<bool> Solve(Board board)
+    private bool Solve(Board board)
     {
       bool knowedMovesTodo;
       do
       {
-        do
+        foreach(Cell c in board.Cells)
         {
-          knowedMovesTodo = false;
-          foreach(Cell c in board.Cells)
-          {
-            await board.GetPossibleCellValuesAsync(c).ConfigureAwait(false);
-            knowedMovesTodo = knowedMovesTodo || await Board.FindNakedSingleAsync(c).ConfigureAwait(false);
-          }
-        } while(knowedMovesTodo == true);
+          board.GetPossibleCellValues(c);
+        }
 
         // Console.WriteLine();
         // int indexTmp = 0;
@@ -58,16 +56,11 @@ namespace Sudoku.DP
         // }
         // Console.WriteLine();
 
-        knowedMovesTodo = await board.FindHiddenSingleAsync().ConfigureAwait(false);
+        knowedMovesTodo = board.FindHiddenSingle();
       } while(knowedMovesTodo == true);
 
       // Est-ce que la grille est résolue?
-      bool gridResolved = true;
-      foreach(Cell c in board.Cells)
-      {
-        gridResolved = gridResolved && await board.IsAllConstraintsRespectedAsync(c).ConfigureAwait(false);
-      }
-      if(gridResolved == true)
+      if(board.IsAllConstraintsRespected() == true)
       {
         return true; // solved!
       }
@@ -84,7 +77,7 @@ namespace Sudoku.DP
             //Console.WriteLine($"Recurse cell index: {c.Index}, value tried: {val}");
 
             board.Push();
-            bool success = await Solve(board).ConfigureAwait(false);
+            bool success = Solve(board);
 
             //Console.WriteLine($"Back from Recurse cell index: {c.Index}, value tried: {val}, success: {success}");
 
