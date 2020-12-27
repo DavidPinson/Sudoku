@@ -10,18 +10,18 @@ namespace Sudoku.DP
   {
     public async Task<Tuple<bool, string>> SolveAsync(string puzzle)
     {
-      Board board = new Board();
+      Board board = new();
       Cell cell;
       for(int i = 0; i < 81; i++)
       {
-        cell = new Cell(i);
+        cell = new(i);
         cell.CurrentValue = puzzle[i] - 48;
-        board.Cells[i] = cell;
+        board.Cells.Add(cell);
       }
 
       bool solved = await Solve(board).ConfigureAwait(false);
 
-      StringBuilder sb = new StringBuilder();
+      StringBuilder sb = new();
       board.Cells.ForEach(c =>
       {
         sb.Append((char)(c.CurrentValue + 48));
@@ -35,12 +35,30 @@ namespace Sudoku.DP
       bool knowedMovesTodo;
       do
       {
-        knowedMovesTodo = false;
-        foreach(Cell c in board.Cells)
+        do
         {
-          await board.GetPossibleCellValuesAsync(c).ConfigureAwait(false);
-          knowedMovesTodo = knowedMovesTodo || await board.FindNakedSingleAsync(c).ConfigureAwait(false);
-        }
+          knowedMovesTodo = false;
+          foreach(Cell c in board.Cells)
+          {
+            await board.GetPossibleCellValuesAsync(c).ConfigureAwait(false);
+            knowedMovesTodo = knowedMovesTodo || await Board.FindNakedSingleAsync(c).ConfigureAwait(false);
+          }
+        } while(knowedMovesTodo == true);
+
+        // Console.WriteLine();
+        // int indexTmp = 0;
+        // for(int i = 0; i < 9; i++)
+        // {
+        //   for(int j = 0; j < 9; j++)
+        //   {
+        //     Console.Write($"{board.Cells[indexTmp].CurrentValue} ");
+        //     indexTmp++;
+        //   }
+        //   Console.Write("\n");
+        // }
+        // Console.WriteLine();
+
+        knowedMovesTodo = await board.FindHiddenSingleAsync().ConfigureAwait(false);
       } while(knowedMovesTodo == true);
 
       // Est-ce que la grille est résolue?
@@ -58,17 +76,17 @@ namespace Sudoku.DP
       {
         if(c.CurrentValue == 0 && c.PossibleValue.Count > 0)
         {
-          List<int> possibleValue = new List<int>(c.PossibleValue);
+          List<int> possibleValue = new(c.PossibleValue);
           foreach(int val in possibleValue)
           {
             c.CurrentValue = val;
 
-            System.Console.WriteLine($"Recurse cell index: {c.Index}, value tried: {val}");
+            //Console.WriteLine($"Recurse cell index: {c.Index}, value tried: {val}");
 
             board.Push();
             bool success = await Solve(board).ConfigureAwait(false);
 
-            System.Console.WriteLine($"Back from Recurse cell index: {c.Index}, value tried: {val}, success: {success}");
+            //Console.WriteLine($"Back from Recurse cell index: {c.Index}, value tried: {val}, success: {success}");
 
             if(success == true)
             {
@@ -82,18 +100,18 @@ namespace Sudoku.DP
         }
       }
 
-      System.Console.WriteLine();
-      int index = 0;
-      for(int i = 0; i < 9; i++)
-      {
-        for(int j = 0; j < 9; j++)
-        {
-          System.Console.Write($"{board.Cells[index].CurrentValue} ");
-          index++;
-        }
-        System.Console.Write("\n");
-      }
-      System.Console.WriteLine();
+      // Console.WriteLine();
+      // int index = 0;
+      // for(int i = 0; i < 9; i++)
+      // {
+      //   for(int j = 0; j < 9; j++)
+      //   {
+      //     Console.Write($"{board.Cells[index].CurrentValue} ");
+      //     index++;
+      //   }
+      //   Console.Write("\n");
+      // }
+      // Console.WriteLine();
 
       return false;
     }

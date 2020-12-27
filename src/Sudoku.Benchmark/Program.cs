@@ -16,19 +16,20 @@ namespace Sudoku.Benchmark
 {
   class Program
   {
-    private static readonly List<Tuple<string, string>> _puzzles = new List<Tuple<string, string>>(2)
+    private static readonly List<Tuple<string, string>> _puzzles = new()
     {
       new Tuple<string, string>("698500012070020090000018607006092003002000700700480200209160000060040080410003926",
         "698537412173624895524918637856792143942351768731486259289165374367249581415873926"),
       new Tuple<string, string>("026780000000003460000056000090000200730090058002000040000940000087200000000061370",
-        "")
+        "426789513578123469913456782891574236734692158652318947365947821187235694249861375")
     };
 
-    static async Task Main(string[] args)
+    static async Task Main()
     {
       try
       {
-        await TestSudokuEngineDPAsync().ConfigureAwait(false);
+        ISudokuEngine engine = new SimpleEngineDP();
+        await TestSudokuEngineAsync(engine, "SimpleEngineDP").ConfigureAwait(false);
       }
       catch(Exception ex)
       {
@@ -36,19 +37,23 @@ namespace Sudoku.Benchmark
       }
     }
 
-    static async Task TestSudokuEngineDPAsync()
+    static async Task TestSudokuEngineAsync(ISudokuEngine engine, string name)
     {
-      ISudokuEngine sudokuEngineDP = new SimpleEngineDP();
+      Console.WriteLine();
+      Console.WriteLine($"----------------------------------------------");
+      Console.WriteLine($"{name}");
+      Console.WriteLine($"----------------------------------------------");
+      Console.WriteLine();
 
       Tuple<bool, string> solvedReturn;
       foreach(Tuple<string, string> t in _puzzles)
       {
-        solvedReturn = await sudokuEngineDP.SolveAsync(t.Item1).ConfigureAwait(false);
+        solvedReturn = await engine.SolveAsync(t.Item1).ConfigureAwait(false);
         if(solvedReturn.Item1 == true)
         {
           if(t.Item2.Equals(solvedReturn.Item2) == true)
           {
-            Console.WriteLine($"Solver think it solved the puzzle and it's right! Puzzle SOLVED");
+            Console.WriteLine($"SOLVED");
           }
           else
           {
@@ -57,7 +62,7 @@ namespace Sudoku.Benchmark
         }
         else
         {
-          Console.WriteLine($"Solver did not solved the puzzle");        
+          Console.WriteLine($"Solver did not solved the puzzle");
         }
       }
     }
