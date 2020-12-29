@@ -21,6 +21,9 @@ namespace Sudoku.DP
           board.Cells.Add(cell);
         }
 
+        //board.Print(Console.Out);
+
+        board.GetPossibleCellValues();
         bool solved = Solve(board);
 
         StringBuilder sb = new();
@@ -33,78 +36,51 @@ namespace Sudoku.DP
       });
     }
 
-    private bool Solve(Board board)
+    private static bool Solve(Board board)
     {
-      bool knowedMovesTodo;
-      do
+      board.FindNakedSingleAndPropagate();
+      while(board.FindHiddenSingleAndPropagate() == true) ;
+
+      if(board.IsStillSolvable() == false)
       {
-        foreach(Cell c in board.Cells)
-        {
-          board.GetPossibleCellValues(c);
-        }
+        // pas besoin de faire d'autre récursion pour rien
+        return false;
+      }
 
-        Console.WriteLine();
-        int indexTmp = 0;
-        for(int i = 0; i < 9; i++)
-        {
-          for(int j = 0; j < 9; j++)
-          {
-            Console.Write($"{board.Cells[indexTmp].CurrentValue} ");
-            indexTmp++;
-          }
-          Console.Write("\n");
-        }
-        Console.WriteLine();
-
-        knowedMovesTodo = board.FindHiddenSingle();
-      } while(knowedMovesTodo == true);
-
-      // Est-ce que la grille est résolue?
+      // Est-ce que la grille est résolu?
       if(board.IsAllConstraintsRespected() == true)
       {
         return true; // solved!
       }
 
+      List<int> possibleValues;
       foreach(Cell c in board.Cells)
       {
         if(c.CurrentValue == 0 && c.PossibleValue.Count > 0)
         {
-          List<int> possibleValue = new(c.PossibleValue);
-          foreach(int val in possibleValue)
+          possibleValues = new List<int>(c.PossibleValue);
+          foreach(int val in possibleValues)
           {
-            c.CurrentValue = val;
-
-            Console.WriteLine($"Recurse cell index: {c.Index}, value tried: {val}");
-
             board.Push();
-            bool success = Solve(board);
 
-            Console.WriteLine($"Back from Recurse cell index: {c.Index}, value tried: {val}, success: {success}");
+            c.PossibleValue.Clear();
+            c.PossibleValue.Add(val);
+
+            bool success = Solve(board);
 
             if(success == true)
             {
-              return true;
+              return true; // solved!
             }
             else
             {
               board.Pop();
             }
           }
-        }
-      }
 
-      Console.WriteLine();
-      int index = 0;
-      for(int i = 0; i < 9; i++)
-      {
-        for(int j = 0; j < 9; j++)
-        {
-          Console.Write($"{board.Cells[index].CurrentValue} ");
-          index++;
+          return false;
         }
-        Console.Write("\n");
       }
-      Console.WriteLine();
 
       return false;
     }
