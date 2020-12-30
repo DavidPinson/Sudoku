@@ -3,13 +3,17 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading.Tasks;
 using BenchmarkDotNet.Attributes;
+using BenchmarkDotNet.Jobs;
 using Sudoku.BrutalSimplicity;
 using Sudoku.DP;
 using Sudoku.Interface;
 
 namespace Sudoku.Benchmark
 {
-  //[SimpleJob(RuntimeMoniker.
+  [SimpleJob(runtimeMoniker: RuntimeMoniker.Net461, baseline: true)]
+  [SimpleJob(runtimeMoniker: RuntimeMoniker.NetCoreApp21)]
+  [SimpleJob(runtimeMoniker: RuntimeMoniker.NetCoreApp31)]
+  [SimpleJob(runtimeMoniker: RuntimeMoniker.NetCoreApp50)]
   [MemoryDiagnoser]
   public class SudokuBenchmark
   {

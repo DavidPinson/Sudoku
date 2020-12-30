@@ -1,5 +1,4 @@
-﻿using System.Threading.Tasks;
-using BenchmarkDotNet.Reports;
+﻿using BenchmarkDotNet.Reports;
 using BenchmarkDotNet.Running;
 
 namespace Sudoku.Benchmark

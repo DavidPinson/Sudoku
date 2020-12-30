@@ -6,7 +6,7 @@ using Sudoku.Interface;
 
 namespace Sudoku.ParallelDP
 {
-  public class SimpleEngineDP : ISudokuEngine
+  public class SimpleEngineParallelDP : ISudokuEngine
   {
     public async Task<Tuple<bool, string>> SolveAsync(string puzzle)
     {
