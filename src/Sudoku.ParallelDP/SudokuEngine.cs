@@ -32,6 +32,9 @@ namespace Sudoku.ParallelDP
 
     private async Task<bool> Solve(Board board)
     {
+
+      Task.
+
       bool knowedMovesTodo;
       do
       {
