@@ -42,10 +42,12 @@ namespace Sudoku.ParallelDP
         options.TaskScheduler = scheduler;
       }
 
-      var block = new ActionBlock<T>(body, options);
+      ActionBlock<T> block = new ActionBlock<T>(body, options);
 
-      await foreach(var item in source)
+      await foreach(T item in source)
+      {
         block.Post(item);
+      }
 
       block.Complete();
       await block.Completion;
