@@ -7,6 +7,9 @@ using System.Threading.Tasks.Dataflow;
 
 namespace Sudoku.ParallelDP
 {
+  // https://scatteredcode.net/parallel-foreach-async-in-c/
+  // https://github.com/ops-ai/experiments
+
   public static class Extension
   {
     public static Task ParallelForEachAsync<T>(this IEnumerable<T> source, Func<T, Task> func, int maxDegreeOfParallelism = 4)
@@ -42,7 +45,7 @@ namespace Sudoku.ParallelDP
         options.TaskScheduler = scheduler;
       }
 
-      ActionBlock<T> block = new ActionBlock<T>(body, options);
+      ActionBlock<T> block = new(body, options);
 
       await foreach(T item in source)
       {
@@ -51,6 +54,19 @@ namespace Sudoku.ParallelDP
 
       block.Complete();
       await block.Completion;
+    }
+
+    public static void TryAddOrUpdate<T, U>(this ConcurrentDictionary<T, U> cd, T key, U val)
+    {
+      U valTmp = default(U);
+      if(cd.TryGetValue(key, out valTmp) == true)
+      {
+        cd.TryUpdate(key, val, valTmp);
+      }
+      else
+      {
+        cd.TryAdd(key, val);
+      }
     }
   }
 }

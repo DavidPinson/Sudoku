@@ -32,85 +32,58 @@ namespace Sudoku.ParallelDP
       _degreeOfParallelism = degreeOfParallelism;
     }
 
-    // public static Task<bool> FindNakedSingleAsync(Cell cell)
-    // {
-    //   return Task.Run(() =>
-    //   {
-    //     if(cell.CurrentValue == 0 && cell.PossibleValue.Count == 1)
-    //     {
-    //       cell.CurrentValue = cell.PossibleValue[0];
-    //       return true;
-    //     }
-    //     return false;
-    //   });
-    // }
-    // public Task<bool> FindHiddenSingleAsync()
-    // {
-    //   // pour que cette méthode fonctione l'hypothèse selon laquelle toutes les "possibles values"
-    //   // de toutes les cases sont trouvées est posée.
+    public async Task<bool> FindHiddenSingleAndPropagateAsync()
+    {
+      bool atLeastOneHiddenSingleHasBeenFound = false;
 
-    //   return Task.Run(() =>
-    //   {
-    //     bool atLeastOneHiddenSingleHasBeenFound = false;
-    //     Dictionary<int, List<int>> hiddenSingles = new();
+      Task<bool> FindHiddenSingleAndPropagateForHouseAsync(List<int> houseIndexes)
+      {
+        // pour que cette méthode fonctione l'hypothèse selon laquelle toutes les "possibles values"
+        // de toutes les cases sont trouvées est posée.
+        return Task.Run(() =>
+        {
+          Dictionary<int, List<int>> hiddenSingles = new();
 
-    //     ConstraintCellPos.Houses.ForEach(l =>
-    //     {
-    //       hiddenSingles.Clear();
-    //       l.ForEach(index =>
-    //       {
-    //         if(Cells[index].CurrentValue == 0)
-    //         {
-    //           Cells[index].PossibleValue.ForEach(val =>
-    //           {
-    //             if(hiddenSingles.ContainsKey(val) == false)
-    //             {
-    //               hiddenSingles[val] = new List<int>();
-    //             }
+          houseIndexes.ForEach(index =>
+          {
+            if(Cells[index].CurrentValue == 0)
+            {
+              foreach(KeyValuePair<int, byte> kvp in Cells[index].PossibleValue)
+              {
+                if(hiddenSingles.ContainsKey(kvp.Key) == false)
+                {
+                  hiddenSingles[kvp.Key] = new List<int>();
+                }
 
-    //             hiddenSingles[val].Add(index);
-    //           });
-    //         }
-    //       });
+                hiddenSingles[kvp.Key].Add(index);
+              }
+            }
+          });
 
-    //       Tuple<int, int> hiddenSingle = hiddenSingles
-    //         .Where(kvp => kvp.Value.Count == 1)
-    //         .Select(kvp => new Tuple<int, int>(kvp.Value[0], kvp.Key))
-    //         .FirstOrDefault();
+          Tuple<int, int> hiddenSingle = hiddenSingles
+            .Where(kvp => kvp.Value.Count == 1)
+            .Select(kvp => new Tuple<int, int>(kvp.Value[0], kvp.Key))
+            .FirstOrDefault();
 
-    //       if(hiddenSingle != default(Tuple<int, int>))
-    //       {
-    //         Cells[hiddenSingle.Item1].CurrentValue = hiddenSingle.Item2;
-    //         Cells[hiddenSingle.Item1].PossibleValue.Clear();
-    //         atLeastOneHiddenSingleHasBeenFound = true;
+          if(hiddenSingle != default(Tuple<int, int>))
+          {
+            AssignCellValue(hiddenSingle.Item1, hiddenSingle.Item2);
+            return true;
+          }
+          return false;
+        });
+      }
 
-    //         ConstraintCellPos.Board[hiddenSingle.Item1].ForEach(i => Cells[i].PossibleValue.Remove(hiddenSingle.Item2));
-    //       }
-    //     });
+      List<Task<bool>> houses = new();
+      ConstraintCellPos.Houses.ForEach(l => houses.Add(FindHiddenSingleAndPropagateForHouseAsync(l)));
 
-    //     return atLeastOneHiddenSingleHasBeenFound;
-    //   });
-    // }
-    // public Task<bool> IsAllConstraintsRespectedAsync()
-    // {
-    //   return Task.Run(() =>
-    //   {
-    //     List<int> houseValues = new();
+      await Task.WhenAll(houses).ConfigureAwait(false);
 
-    //     foreach(List<int> l in ConstraintCellPos.Houses)
-    //     {
-    //       houseValues.Clear();
-    //       l.ForEach(val => houseValues.Add(Cells[val].CurrentValue));
+      houses.ForEach(async (t) => atLeastOneHiddenSingleHasBeenFound = await t.ConfigureAwait(false));
 
-    //       if(ConstraintCellPos.AllPossibleValues.Except(houseValues).Any() == true)
-    //       {
-    //         return false;
-    //       }
-    //     }
+      return atLeastOneHiddenSingleHasBeenFound;
+    }
 
-    //     return true;
-    //   });
-    // }
     public async Task GetPossibleCellValuesAsync()
     {
       Task GetPossibleCellValuesForCell(Cell cell)
@@ -129,12 +102,44 @@ namespace Sudoku.ParallelDP
 
       await Cells.ParallelForEachAsync(GetPossibleCellValuesForCell, _degreeOfParallelism).ConfigureAwait(false);
     }
+    public async Task FindNakedSingleAndPropagateAsync()
+    {
+      Task CheckNakedSingleAndPropagateAsync(Cell cell)
+      {
+        return Task.Run(() =>
+        {
+          if(cell.CurrentValue == 0 && cell.PossibleValue.Count == 1)
+          {
+            AssignCellValue(cell.Index, cell.PossibleValue.FirstOrDefault().Key);
+          }
+        });
+      }
 
+      await Cells.ParallelForEachAsync(CheckNakedSingleAndPropagateAsync, _degreeOfParallelism).ConfigureAwait(false);
+    }
+    private void AssignCellValue(int cellIndex, int cellValue)
+    {
+      if(cellValue != 0)
+      {
+        Cells[cellIndex].CurrentValue = cellValue;
+        Cells[cellIndex].PossibleValue.Clear();
+        ConstraintCellPos.Board[cellIndex].ForEach(i =>
+        {
+          if(Cells[i].PossibleValue.TryRemove(cellValue, out byte val) == true)
+          {
+            if(Cells[i].PossibleValue.Count == 1)
+            {
+              AssignCellValue(i, Cells[i].PossibleValue.FirstOrDefault().Key);
+            }
+          }
+        });
+      }
+    }
     public async Task PushAsync()
     {
       List<Cell> values = new(81);
 
-      Task AddCellToList(Cell cell)
+      Task AddCellToListAsync(Cell cell)
       {
         return Task.Run(() =>
         {
@@ -142,7 +147,7 @@ namespace Sudoku.ParallelDP
         });
       }
 
-      await Cells.ParallelForEachAsync(AddCellToList, _degreeOfParallelism).ConfigureAwait(false);
+      await Cells.ParallelForEachAsync(AddCellToListAsync, _degreeOfParallelism).ConfigureAwait(false);
 
       _stack.Push(values);
     }
@@ -150,7 +155,7 @@ namespace Sudoku.ParallelDP
     {
       List<Cell> values = _stack.Pop();
 
-      Task AdjustCellInBoardCells(Cell cell)
+      Task AdjustCellInBoardCellsAsync(Cell cell)
       {
         return Task.Run(() =>
         {
@@ -159,7 +164,7 @@ namespace Sudoku.ParallelDP
         });
       }
 
-      await values.ParallelForEachAsync(AdjustCellInBoardCells, _degreeOfParallelism).ConfigureAwait(false);
+      await values.ParallelForEachAsync(AdjustCellInBoardCellsAsync, _degreeOfParallelism).ConfigureAwait(false);
     }
 
   }

@@ -31,9 +31,9 @@ namespace Sudoku.ParallelDP
       return new Tuple<bool, string>(solved, sb.ToString());
     }
 
-    private static bool Solve(Board board)
+    private static async Task<bool> Solve(Board board)
     {
-      board.FindNakedSingleAndPropagate();
+      await board.FindNakedSingleAndPropagateAsync().ConfigureAwait(false);
       while(board.FindHiddenSingleAndPropagate() == true) ;
 
       if(board.IsStillSolvable() == false)
@@ -47,7 +47,7 @@ namespace Sudoku.ParallelDP
       {
         return true; // solved!
       }
-      
+
       List<int> possibleValues;
       foreach(Cell c in board.Cells)
       {
